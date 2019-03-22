@@ -2,19 +2,19 @@ const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const pLimit = require('p-limit');
 const pSettle = require('p-settle');
-const {IMDB_NAME_URL, IMDB_URL, P_LIMIT} = require('./constants');
+const {IMDB_NAME_URL, IMDB_URL, P_LIMIT} = require('./constants'); //Recuperation des constantes
 
 /**
  * Get filmography for a given actor
  * @param  {String}  actor - imdb id
  * @return {Array}
  */
-const getFilmography = async actor => {
+const getFilmography = async actor => { //Liste des films de l'acteur recherche (ici Denzel)
   const response = await fetch(`${IMDB_NAME_URL}/${actor}`);
   const body = await response.text();
   const $ = cheerio.load(body);
 
-  return $('#filmo-head-actor + .filmo-category-section .filmo-row b a')
+  return $('#filmo-head-actor + .filmo-category-section .filmo-row b a') //concatenation des balises HTML
     .map((i, element) => {
       return {
         'link': `${IMDB_URL}${$(element).attr('href')}`,
@@ -24,7 +24,7 @@ const getFilmography = async actor => {
     .get();
 };
 
-const getMovie = async link => {
+const getMovie = async link => { //recuperation des infos des films
   const response = await fetch(link);
   const body = await response.text();
   const $ = cheerio.load(body);
@@ -46,14 +46,14 @@ module.exports = async actor => {
   const limit = pLimit(P_LIMIT);
   const filmography = await getFilmography(actor);
 
-  const promises = filmography.map(filmo => {
+  const promises = filmography.map(filmo => { //Recuperation des infos de chacun des films de Denzel
     return limit(async () => {
       return await getMovie(filmo.link);
     });
   });
 
   const results = await pSettle(promises);
-  const isFulfilled = results.filter(result => result.isFulfilled).map(result => result.value);
+  const isFulfilled = results.filter(result => result.isFulfilled).map(result => result.value); //Condition de sortie
 
   return [].concat.apply([], isFulfilled);
 };

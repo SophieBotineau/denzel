@@ -5,7 +5,7 @@ const ObjectId = require("mongodb").ObjectID;
 const imdb = require("./imdb");
 const DENZEL_IMDB_ID = "nm0000243";
 
-const CONNECTION_URL = "mongodb+srv://SophieB:Laure123@webdevtd-8bwam.mongodb.net/test?retryWrites=true";
+const CONNECTION_URL = "mongodb+srv://SophieB:Laure123@webdevtd-8bwam.mongodb.net/test?retryWrites=true";//penser a mettre le mdp en var d'environnement
 const DATABASE_NAME = "Dataset";
 var app = Express();
 
@@ -13,7 +13,7 @@ app.use(BodyParser.json());
 app.use(BodyParser.urlencoded({ extended: true }));
 
 
-app.listen(9292, () => {
+app.listen(9292, () => { //connexion a MongoDB sur le port 9292
 
     MongoClient.connect(
         CONNECTION_URL,
@@ -30,7 +30,7 @@ app.listen(9292, () => {
     );
 });
 
-app.get("/movies/populate", async (request, response) => {
+app.get("/movies/populate", async (request, response) => { //Premier noeud d'API peuplant la bdd
 
     const movies = await imdb(DENZEL_IMDB_ID);
     collection.insertMany(movies, (err, result) => {
@@ -46,7 +46,7 @@ app.get("/movies/populate", async (request, response) => {
 
 });
 
-app.get("/movies", (request, response) => {
+app.get("/movies", (request, response) => { //Affichage d un film recommande aleatoire
 
     collection
         .aggregate([
@@ -68,7 +68,7 @@ app.get("/movies", (request, response) => {
 });
 
 
-app.get("/movies/search", (request, response) => {
+app.get("/movies/search", (request, response) => { //Permet de faire une recherche sur la bdd
 
     console.log(request.query.limit);
     collection.aggregate([
@@ -92,16 +92,21 @@ app.get("/movies/search", (request, response) => {
 });
 
 app.get("/movies/:id", (request, response) => {
+    collection.findOne({ id: request.params.id }, (err, result) => {
+        if (err) {
+            return response.status(500).send(err);
 
-    collection.findOne({ id: request.params.id }).toArray((error, result) => {
-
-        if (error)
-        {
-            return response.status(500).send(error);
         }
         response.send(result);
-
     });
 
 });
 
+app.post("/movies/:id", (request, response) => {
+    collection.updateMany({id: request.params.id}, {$set: {date :request.body.date, review : request.body.review}}, {"upsert": true},(error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }
+        response.send(result)
+    });
+});
